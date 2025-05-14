@@ -384,14 +384,35 @@ class ResultsDialog(QDialog):
         self.current_results = results
         self.original_data = original_data
         self.current_page = 0
+        self.all_results = results.copy()  # Сохраняем полный список результатов
         
         # Create main layout
         main_layout = QVBoxLayout(self)
         
+        # Header with title and filter
+        header_layout = QHBoxLayout()
+        
         # Results title
         results_label = QLabel("Рекомендуемые курсы:")
         results_label.setFont(QFont("", 12, QFont.Bold))
-        main_layout.addWidget(results_label)
+        header_layout.addWidget(results_label)
+        
+        # Add spacer to push filter dropdown to the right
+        header_layout.addStretch()
+        
+        # Price filter dropdown
+        filter_label = QLabel("Фильтр по цене:")
+        header_layout.addWidget(filter_label)
+        
+        self.price_filter = QComboBox()
+        self.price_filter.addItem("Все цены")
+        self.price_filter.addItem("Низкая цена")
+        self.price_filter.addItem("Средняя цена")
+        self.price_filter.addItem("Высокая цена")
+        self.price_filter.currentIndexChanged.connect(self.apply_price_filter)
+        header_layout.addWidget(self.price_filter)
+        
+        main_layout.addLayout(header_layout)
         
         # Container for results
         self.results_container = QWidget()
@@ -477,6 +498,33 @@ class ResultsDialog(QDialog):
         self.current_page += 1
         
         # Show next page of results
+        self.show_results_page()
+    
+    def apply_price_filter(self, index):
+        # Reset to page 0 when filter changes
+        self.current_page = 0
+        
+        # Apply price filter
+        if index == 0:  # All prices
+            self.current_results = self.all_results.copy()
+        elif index == 1:  # Low price (192-199)
+            self.current_results = [
+                course for course in self.all_results 
+                if 192 <= float(self.original_data[self.original_data['Название'] == course['Название']]['Цена'].values[0]) <= 199
+            ]
+        elif index == 2:  # Medium price (199-207)
+            self.current_results = [
+                course for course in self.all_results 
+                if 199 < float(self.original_data[self.original_data['Название'] == course['Название']]['Цена'].values[0]) <= 207
+            ]
+        elif index == 3:  # High price (207-267)
+            self.current_results = [
+                course for course in self.all_results 
+                if 207 < float(self.original_data[self.original_data['Название'] == course['Название']]['Цена'].values[0]) <= 267
+            ]
+        
+        # Clear and show filtered results
+        self.clear_results()
         self.show_results_page()
 
 # Main function for running the GUI
